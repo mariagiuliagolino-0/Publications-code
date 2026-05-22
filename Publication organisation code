@@ -1,0 +1,60 @@
+import pandas as pd
+from urllib.parse import urlparse, parse_qsl, urlencode
+
+def normalize_url(url):
+    """
+    Normalize a URL by:
+    - Removing trailing slashes
+    - Converting to lowercase
+    - Sorting query parameters
+    - Removing invisible characters
+    """
+
+    try:
+        # Strip invisible characters (e.g., whitespace, non-printable characters)
+        url = ''.join(c for c in url if c.isprintable()).strip()
+
+        # Parse the URL into components
+        parsed_url = urlparse(url)
+
+        # Normalize the netloc (host) and path
+        normalized_netloc = parsed_url.netloc.lower()
+        normalized_path = parsed_url.path.rstrip('/').lower()
+
+        # Normalize query parameters (sorted and encoded)
+        query_params = parse_qsl(parsed_url.query, keep_blank_values=True)
+        normalized_query = urlencode(sorted(query_params))
+
+        # Reassemble the URL
+        normalized_url = urlunparse((
+            parsed_url.scheme,      # Scheme (http/https)
+            normalized_netloc,      # Host
+            normalized_path,        # Path
+            parsed_url.params,      # Params
+            normalized_query,       # Query
+            parsed_url.fragment     # Fragment
+        ))
+
+        return normalized_url
+
+    except Exception as e:
+        # Return the original URL if normalization fails
+        return url
+
+
+# Path to the combined Excel file
+combined_file = r"C:/Users/berghna/Desktop/20260311 Check WS7/2025-11-14_SSM publi"
+
+# Step 1: Read the combined file
+df = pd.read_excel(combined_file)
+
+# Step 2: Specify the URL column name
+url_column = 'Link'  # Replace with the name of your URL column
+
+if url_column in df.columns:
+
+    # Step 3: Normalize the URL column
+    df['Normalized_URL'] = df[url_column].apply(normalize_url)
+
+    # Step 4: Add a column to indicate duplicates
+    df['Is_Duplicate'] = df['Normalized_URL'].duplicated(keep=False)  # 'True'
