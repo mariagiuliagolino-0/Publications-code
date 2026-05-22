@@ -1,0 +1,54 @@
+import pandas as pd
+
+# Path to the Excel file
+excel_file = 'C:/Users/berghna/Desktop/MS7 restructuring/2025-11-14_SSM publicat'
+
+# Define a dictionary specifying which row contains headers for each sheet
+sheet_headers = {
+    'ECG Guides': 9,   # 10th row contains headers for Sheet1
+    'Letters': 4,      # 5th row contains headers for Sheet2
+    'ECG reports': 4,  # 5th row contains headers for Sheet3
+    'Other publications': 15,  # 16th row contains headers for Sheet1
+}
+
+# Step 1: Read all sheets into a dictionary of DataFrames with custom headers
+sheets_dict = {}
+for sheet_name, header_row in sheet_headers.items():
+    sheets_dict[sheet_name] = pd.read_excel(excel_file, sheet_name=sheet_name, header=header_row)
+
+# Step 2: Initialize an empty list to store DataFrames
+dataframes = []
+
+# Step 3: Initialize column order based on the first sheet and supplement columns
+column_order = list(sheets_dict[list(sheet_headers.keys())[0]].columns)  # Start
+
+# Add 'Source' as the first column in the column order
+column_order = ['Source'] + column_order
+
+# Process each sheet
+for sheet_name, df in sheets_dict.items():
+    # Add a column for the sheet name
+    df['Source'] = sheet_name  # Add sheet name as the source
+
+    # Append any new columns from this sheet to the column order in the order they appear
+    for col in df.columns:
+        if col not in column_order:  # If the column is not already in the order
+            column_order.append(col)
+
+    # Append the DataFrame to the list
+    dataframes.append(df)
+
+# Step 4: Reindex each DataFrame to ensure they have the same structure
+aligned_dataframes = []
+for df in dataframes:
+    # Reindex the DataFrame to include all columns in the specified order, filling missing values
+    aligned_df = df.reindex(columns=column_order)
+    aligned_dataframes.append(aligned_df)
+
+# Step 5: Concatenate all DataFrames into one unified DataFrame
+combined_df = pd.concat(aligned_dataframes, ignore_index=True)
+
+# Step 6: Save the resulting DataFrame to a new Excel file
+combined_df.to_excel('combined_file.xlsx', index=False)
+
+print("Data successfully integrated into combined_file.xlsx")
